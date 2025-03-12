@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>.white[.large[4.dplyr数据整理]]</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="" />
+    <script src="libs/header-attrs-2.25/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link rel="stylesheet" href="zh-CN.css" type="text/css" />
+    <link rel="stylesheet" href="extra.css" type="text/css" />
+    <link rel="stylesheet" href="footer-header.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# .white[.large[<code>4.dplyr</code>数据整理]]
+]
+.author[
+### 
+]
+
+---
+
+
+layout: true
+  
+&lt;div class="my-footer"&gt;&lt;span&gt;Qiao-Guo Tan/CEE/XMU | tanqg@xmu.edu.cn | 2025-Mar-12   
+&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;
+&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;&amp;emsp;
+&lt;/span&gt;&lt;/div&gt; 
+
+
+---
+## 数据整理
+* 2个常用的程序包`dplyr`，`tidyr`
+* 都包含在`tidyverse`包中
+
+
+Package     | 常用函数
+------------|--------------------------------------------
+`dplyr`     | `select()`，`filter()`，`mutate()`，`arrange()`
+            |`group_by()`，`summarise()`
+            | `join()`，`%&gt;%`（pipe运算符）
+`tidyr`     | `pivot_longer`，`pivot_wider()`
+
+
+???
+## `dplyr`名字的含义
+
+https://github.com/tidyverse/dplyr/issues/1857
+
+hadley commented on 26 May 2016
+- The d is for dataframes, the plyr is to evoke pliers. Pronounce however you like.
+
+@kartiksubbarao
+- kartiksubbarao commented on 30 Oct 2017
+The precursor to dplyr was called plyr. The 'ply' in plyr comes from an expansion/refining of the various "apply" functions in R as part of the "split-apply-combine" model/strategy. Here's a good slideset that provides more insight into the plyr name:
+
+https://www.slideshare.net/hadley/plyr-one-data-analytic-strategy
+
+
+---
+
+## `tidyverse`包括以下程序包
+
+
+
+```r
+library(tidyverse)
+tidyverse_packages()
+```
+
+```
+##  [1] "broom"         "conflicted"    "cli"           "dbplyr"       
+##  [5] "dplyr"         "dtplyr"        "forcats"       "ggplot2"      
+##  [9] "googledrive"   "googlesheets4" "haven"         "hms"          
+## [13] "httr"          "jsonlite"      "lubridate"     "magrittr"     
+## [17] "modelr"        "pillar"        "purrr"         "ragg"         
+## [21] "readr"         "readxl"        "reprex"        "rlang"        
+## [25] "rstudioapi"    "rvest"         "stringr"       "tibble"       
+## [29] "tidyr"         "xml2"          "tidyverse"
+```
+
+---
+## 认识pipe运算符  
+
+  
+
+.pull-left[
+* `dplyr`包中的pipe：.red[`%&gt;%`]
+* 新版R自带的pipe：.red[`|&gt;`]  
+
+* 插入pipe的快捷键： 
+
+Windows &amp; Linux	| Mac
+-------|---------
+Ctrl+Shift+M	| Cmd+Shift+M
+]
+
+
+
+.pull-right[
+
+&lt;img src="pics/pipe.png" width="1672" /&gt;
+]
+
+
+---
+
+## 案例分析：美国贻贝观察
+
+### NOAA's National Status and Trends###    
+&gt; NS&amp;T is comprised of three nationwide programs, Benthic Surveillance, .red[Mussel Watch] and Bioeffects that are designed to describe the current status of, and detect changes in, the environmental quality of our nation's .red[estuarine and coastal waters] through environmental monitoring, assessment and related research.
+
+.footnote[
+[数据来源：https://products.coastalscience.noaa.gov/collections/ltmonitoring/nsandt/](https://products.coastalscience.noaa.gov/collections/ltmonitoring/nsandt/)  
+[数据下载：https://pan.baidu.com/s/1neR-ndGZBBMGEexckrsvJA?pwd=3vjf](https://pan.baidu.com/s/1neR-ndGZBBMGEexckrsvJA?pwd=3vjf)
+]
+
+
+---
+
+### 初步了解数据
+
+* 已从NOAA网站下载数据，将其命名为.red[`MusselWatch20170718.csv`]  
+
+* 读取数据  
+
+
+```r
+d0 &lt;- read.csv("MusselWatch20170718.csv") 
+```
+
+### 多少行，多少列?
+
+```r
+dim(d0) #有127743行，用excel处理会很棘手
+```
+
+```
+## [1] 127743     16
+```
+
+---
+
+### 各列的名称是什么？  
+
+```r
+names(d0) 
+```
+
+```
+##  [1] "Study"             "NST_Site"          "General_Location" 
+##  [4] "Specific_Location" "Sample_ID"         "Latitude"         
+##  [7] "Longitude"         "Fiscal_Year"       "Collection_Date"  
+## [10] "Matrix"            "Scientific_Name"   "Method"           
+## [13] "Parameter"         "Value"             "Qualifier"        
+## [16] "Unit"
+```
+
+### 有哪些年份？  
+
+
+```r
+unique(d0$Fiscal_Year)
+```
+
+```
+##  [1] 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2004 2005 2007
+## [16] 2008 2009 2010 2011 2012 2014 1984 1985 1986 1987 1988 1989 1990 2003 2006
+## [31] 2013
+```
+
+---
+
+### 测定了哪些类型的样品？  
+
+
+```r
+unique(d0$Matrix)
+```
+
+```
+##  [1] "Sediment"            "Water"               "Fish Filet"         
+##  [4] "Fish Liver"          "Sediment Trap"       "Nepheloid"          
+##  [7] "Oyster"              "Coral"               "Mussel"             
+## [10] "Fish Muscle"         "Clam"                "Cockles"            
+## [13] "Conch"               "Zebra Mussel Tissue" "Starfish"           
+## [16] "Flatfish"            "Shrimp"              "Fish"               
+## [19] "Lobster"
+```
+
+---
+### 各类样品各有多少个？
+
+```r
+table(d0$Matrix)
+```
+
+```
+## 
+##                Clam             Cockles               Conch               Coral 
+##                 235                 112                 492                1218 
+##                Fish          Fish Filet          Fish Liver         Fish Muscle 
+##                 140                 296                3955                 168 
+##            Flatfish             Lobster              Mussel           Nepheloid 
+##                  28                  44               25855                 112 
+##              Oyster            Sediment       Sediment Trap              Shrimp 
+##               23505               66418                  80                  28 
+##            Starfish               Water Zebra Mussel Tissue 
+##                  70                 140                4847
+```
+
+---
+
+### 测定了哪些污染物？  
+
+
+```r
+unique(d0$Parameter)
+```
+
+```
+##  [1] "Aluminum"                        "Antimony"                       
+##  [3] "Arsenic"                         "Cadmium"                        
+##  [5] "Chromium"                        "Copper"                         
+##  [7] "Iron"                            "Lead"                           
+##  [9] "Manganese"                       "Mercury"                        
+## [11] "Nickel"                          "Selenium"                       
+## [13] "Silver"                          "Tin"                            
+## [15] "Zinc"                            "Silicon"                        
+## [17] "Thallium"                        "Methyl Mercury"                 
+## [19] "Aluminum - Units in Wet Weight"  "Antimony - Units in Wet Weight" 
+## [21] "Arsenic - Units in Wet Weight"   "Barium - Units in Wet Weight"   
+## [23] "Beryllium - Units in Wet Weight" "Cadmium - Units in Wet Weight"  
+## [25] "Chromium - Units in Wet Weight"  "Cobalt - Units in Wet Weight"   
+## [27] "Copper - Units in Wet Weight"    "Iron - Units in Wet Weight"     
+## [29] "Lead - Units in Wet Weight"      "Lithium - Units in Wet Weight"  
+## [31] "Manganese - Units in Wet Weight" "Mercury - Units in Wet Weight"  
+## [33] "Nickel - Units in Wet Weight"    "Selenium - Units in Wet Weight" 
+## [35] "Silver - Units in Wet Weight"    "Thallium - Units in Wet Weight" 
+## [37] "Tin - Units in Wet Weight"       "Uranium - Units in Wet Weight"  
+## [39] "Vanadium - Units in Wet Weight"  "Zinc - Units in Wet Weight"
+```
+
+---
+
+### 数据的单位是什么？  
+
+
+```r
+unique(d0$Unit)
+```
+
+```
+## [1] "micrograms per dry gram  " "micrograms per wet gram"
+```
+
+* 注意：有两种单位，后续分析时需小心，不能把不同单位的数据混在一起分析
+
+---
+## 提出问题
+
+### 1. 牡蛎和贻贝，哪类生物的Zn浓度高？
+### 2. 牡蛎、贻贝中各种金属的年际变化趋势？
+### 3. Zn浓度高的牡蛎，是否Cu浓度也高？
+&lt;br&gt;
+
+--
+
+### 目前的数据存在哪些问题：
+1. 数据太大，冗余信息过多
+
+--
+
+2. 存在干重、湿重两种不同的单位
+
+---
+
+## 整理数据：用`select()`筛选数据的特定列
+
+### 使用“列名”来选择列 
+
+- .large[选择数据`d0`的`Fiscal_Year`,  `Matrix`,  `Scientific_Name`,  `Parameter`, `Value`, `Unit`列，存入`d`  ]
+
+```r
+library(tidyverse)
+d &lt;- d0 %&gt;%
+* select(Fiscal_Year, Matrix, Scientific_Name, Parameter, Value, Unit)
+```
+
+
+- .large[检查一下结果是否符合预期：]
+
+
+```r
+names(d)
+```
+
+```
+## [1] "Fiscal_Year"     "Matrix"          "Scientific_Name" "Parameter"      
+## [5] "Value"           "Unit"
+```
+
+---
+
+### 也可以用“列号”进行选择  
+
+- .large[选择数据`d0`的第8， 10， 14， 16列，存入`d1`]  
+
+
+```r
+d1 &lt;- d0 %&gt;%
+*  select(8, 10, 14, 16)
+names(d1)
+```
+
+```
+## [1] "Fiscal_Year" "Matrix"      "Value"       "Unit"
+```
+
+
+- .large[删去数据`d0`的第1-7列，第9，15列，存入`d2`]  
+
+
+```r
+d2 &lt;- d0 %&gt;%
+* select(-c(1:7, 9, 15))
+names(d2)
+```
+
+```
+## [1] "Fiscal_Year"     "Matrix"          "Scientific_Name" "Method"         
+## [5] "Parameter"       "Value"           "Unit"
+```
+
+---
+
+## 数据整理： 用`filter()`筛选数据的特定行  
+
+### 筛选出牡蛎和贻贝Zn的数据
+
+
+```r
+d_Zn &lt;- d0 |&gt; 
+  select(Fiscal_Year, Matrix, Scientific_Name, Parameter, Value, Unit) |&gt; 
+* filter(Matrix %in% c("Oyster", "Mussel")) |&gt;
+* filter(Parameter == "Zinc")
+```
+
+&lt;br&gt;
+
+.large[注意：筛选多个目标值用".red[`%in%`]"，筛选单一目标值用".red[`==`]"。]  
+
+等价于：
+
+```r
+d_Zn &lt;- d0 |&gt; 
+  select(Fiscal_Year, Matrix, Scientific_Name, Parameter, Value, Unit) |&gt; 
+  filter((Matrix == "Oyster" | Matrix == "Mussel") &amp; Parameter == "Zinc" )
+```
+
+
+---
+
+### 检查一下新的数据
+
+
+```r
+dim(d_Zn)  #行数大为精简
+```
+
+```
+## [1] 3588    6
+```
+
+
+### 再次查看数据的单位  
+
+```r
+unique(d_Zn$Unit)
+```
+
+```
+*## [1] "micrograms per dry gram  "
+```
+
+.large[数据全部是基于干重的了，可以解除警报 ]
+
+---
+### 检查数据  
+
+```r
+unique(d_Zn$Matrix)  #只剩下Oyster和Mussel
+```
+
+```
+*## [1] "Oyster" "Mussel"
+```
+
+```r
+unique(d_Zn$Parameter) #只剩下Zinc
+```
+
+```
+*## [1] "Zinc"
+```
+
+
+
+```r
+unique(d_Zn$Scientific_Name) # 发现牡蛎、贻贝共有7个物种，我们可以把问题1细化到物种
+```
+
+```
+## [1] "Crassostrea virginica"   "Mytilus edulis"         
+## [3] "Mytilus species"         "Ostrea sandvicensis"    
+## [5] "Geukensia demissa"       "Crassostrea rhizophorae"
+## [7] "Crassostrea gigas"
+```
+---
+### 查看各物种有多少条数据：
+
+```r
+table(d_Zn$Scientific_Name)
+```
+
+```
+## 
+##       Crassostrea gigas Crassostrea rhizophorae   Crassostrea virginica 
+##                       2                      30                    1655 
+##       Geukensia demissa          Mytilus edulis         Mytilus species 
+##                      28                     769                    1071 
+##     Ostrea sandvicensis 
+##                      33
+```
+
+### 删除只有两条数据的物种
+
+```r
+d_Zn &lt;- d_Zn |&gt; 
+  filter(Scientific_Name != "Crassostrea gigas")
+```
+
+
+---
+
+### 也可以用base R的`subset()`筛选数据
+
+- 例如，筛选牡蛎数据的代码如下：  
+
+
+```r
+d_oy &lt;- subset(d, Matrix=="Oyster") 
+unique(d_oy$Matrix)
+```
+
+```
+## [1] "Oyster"
+```
+
+&lt;br&gt;
+
+此操作简洁快速，适用于筛选步骤不多的场合
+
+---
+## 注意区分`filter()`和`select()` 
+
+- .large[`filter()` 用于选择特定的行（即样品、观察)]
+
+- .large[`select()` 用于选择特定的列（即变量) ]
+
+
+
+---
+### 研究问题1：牡蛎、贻贝，谁的Zn浓度高？
+
+
+.pull-left[
+
+- 作散点图  
+
+```r
+d_Zn %&gt;% 
+  ggplot(aes(Scientific_Name, Value) )+
+  geom_point()
+```
+]
+
+.pull-right[
+&lt;img src="pics/mussel_1.png" width="4141" /&gt;
+]
+
+
+
+---
+
+###修改成对数坐标###
+
+
+.pull-left[
+
+当数据之间差异很大时，可以考虑用对数坐标，使数据均匀分散开  
+
+```r
+d_Zn %&gt;% 
+  ggplot(aes(Scientific_Name, Value, color = Matrix))+
+  geom_point()+
+*  scale_y_log10() 
+```
+]
+
+.pull-right[
+
+&lt;img src="pics/mussel_2.png" width="4141" /&gt;
+]
+
+---
+
+### 物种名称太长，放到y轴上
+
+.pull-left[
+```r
+d_Zn |&gt; 
+  ggplot(aes(x = Value,
+             y = Scientific_Name,
+             color = Matrix)) +
+  geom_point() +
+  scale_x_log10()
+```
+]
+
+.pull-right[
+&lt;img src="pics/mussel_3.png" width="4888" /&gt;
+]
+
+
+---
+### 按中位值排序  
+
+
+.pull-left[
+
+原先的顺序无规律，不便于传达信息  
+
+```r
+d_Zn %&gt;% 
+ ggplot(aes(x = Value, 
+* y = reorder(Scientific_Name, Value, median),
+  color = Matrix))+ #按中位值降序排序
+  geom_point()+
+  scale_x_log10()
+
+```
+]
+
+.pull-right[
+&lt;img src="pics/mussel_5.png" width="4888" /&gt;
+]
+
+--
+
+- 用到了`reorder()`函数按照中位数降序排列  
+- 你可以`?reorder()`看看这个函数的用法
+- 思考：按照均值升序如何排列？
+
+---
+### 手动排序  
+
+- 从图上观察高低顺序，然后按顺序排列
+- 这种方法容易理解，很常用  
+- 代码如下：  
+
+
+```r
+# 注意重排序的物种名存入新变量Scientific_Name_2，以避免覆盖原变量
+d_Zn$Scientific_Name_2 &lt;- factor(
+  d_Zn$Scientific_Name,
+  levels = c(
+    "Geukensia demissa",
+    "Mytilus edulis",
+    "Mytilus species",
+    "Ostrea sandvicensis",
+    "Crassostrea virginica",
+    "Crassostrea rhizophorae"
+  )
+)
+```
+
+---
+### 按中位值排序-2  
+.pull-left[
+```r
+d_Zn %&gt;%
+*  ggplot(aes(x = Value, y = Scientific_Name_2,
+             color = Matrix)) +
+  geom_point() +
+  scale_x_log10()
+```
+]
+
+
+.pull-right[
+&lt;img src="pics/mussel_5b.png" width="4888" /&gt;
+]
+---
+### 修饰细节  
+- 数据点较多时，可以用小提琴图展现数据的分布，用抖动点充分展现原始数据
+- 颜色的使用考虑色盲读者，考虑黑白打印     
+
+```r
+d_Zn %&gt;%
+  ggplot(aes(Value, reorder(Scientific_Name, Value, median), color = Matrix)) +
+  theme_classic()+
+* geom_violin(draw_quantiles = 0.5, key_glyph = draw_key_blank)+ #小提琴图，不画图例
+  geom_point(size = 0, alpha = 0.5,
+    position = position_jitter(width = 0, height = 0.2)) +
+  scale_x_log10()+
+  annotation_logticks(sides="b")  + #对数刻度 
+* ggsci::scale_color_aaas()+ #程序包配色
+  labs(x=~"Zn concentration ("*mu*g~g^'-1'*"dry wt.)",
+       y=NULL, color = NULL)+
+  guides(colour = guide_legend(override.aes = list(size = 2, alpha = 1)))+ #修改图例格式
+  theme(axis.text.y = element_text(face="italic"))+ #物种名斜体
+  theme(legend.position=c(0,1),
+        legend.justification = c(0,1),
+        legend.background = element_blank(),
+        legend.key = element_blank()) #调整图例位置、背景
+```
+---
+class: center 
+### 成品
+&lt;img src="pics/mussel_6.png" width="70%" /&gt;
+
+---
+
+## 用`group_by`和`summarise`分组计算均值、标准差  
+
+
+- 按物种名（`Scientific_Name`）分组  
+- 计算各组浓度（`Value`）的均值（`mean`）和标准差（`sd`）
+
+```r
+d_Zn_mean &lt;-  d_Zn %&gt;%
+* group_by(Matrix, Scientific_Name) |&gt;
+* summarise(mean = mean(Value), sd = sd(Value), sample_size = n())
+```
+
+
+- 查看计算结果 
+
+
+```r
+d_Zn_mean
+```
+
+```
+## # A tibble: 6 × 5
+## # Groups:   Matrix [2]
+##   Matrix Scientific_Name          mean    sd sample_size
+##   &lt;chr&gt;  &lt;chr&gt;                   &lt;dbl&gt; &lt;dbl&gt;       &lt;int&gt;
+## 1 Mussel Geukensia demissa        294.  885.          28
+## 2 Mussel Mytilus edulis           128.  431.         769
+## 3 Mussel Mytilus species          149.  122.        1071
+## 4 Oyster Crassostrea rhizophorae 1879. 1057.          30
+## 5 Oyster Crassostrea virginica   2742. 2421.        1655
+## 6 Oyster Ostrea sandvicensis     1099.  561.          33
+```
+
+- 以上结果可用于作图，也可用于表格  
+
+
+---
+
+### 研究问题2：紫贻贝（*Mytilus edulis*）中各种金属的年际变化趋势？
+
+
+- 再来观察数据
+
+
+```r
+unique(d0$Parameter)
+```
+
+```
+##  [1] "Aluminum"                        "Antimony"                       
+##  [3] "Arsenic"                         "Cadmium"                        
+##  [5] "Chromium"                        "Copper"                         
+##  [7] "Iron"                            "Lead"                           
+##  [9] "Manganese"                       "Mercury"                        
+## [11] "Nickel"                          "Selenium"                       
+## [13] "Silver"                          "Tin"                            
+## [15] "Zinc"                            "Silicon"                        
+## [17] "Thallium"                        "Methyl Mercury"                 
+## [19] "Aluminum - Units in Wet Weight"  "Antimony - Units in Wet Weight" 
+## [21] "Arsenic - Units in Wet Weight"   "Barium - Units in Wet Weight"   
+## [23] "Beryllium - Units in Wet Weight" "Cadmium - Units in Wet Weight"  
+## [25] "Chromium - Units in Wet Weight"  "Cobalt - Units in Wet Weight"   
+## [27] "Copper - Units in Wet Weight"    "Iron - Units in Wet Weight"     
+## [29] "Lead - Units in Wet Weight"      "Lithium - Units in Wet Weight"  
+## [31] "Manganese - Units in Wet Weight" "Mercury - Units in Wet Weight"  
+## [33] "Nickel - Units in Wet Weight"    "Selenium - Units in Wet Weight" 
+## [35] "Silver - Units in Wet Weight"    "Thallium - Units in Wet Weight" 
+## [37] "Tin - Units in Wet Weight"       "Uranium - Units in Wet Weight"  
+## [39] "Vanadium - Units in Wet Weight"  "Zinc - Units in Wet Weight"
+```
+
+---
+### 铅污染的年际变化趋势
+
+* 筛选出*Mytilus edulis*的铅浓度数据  
+* 求中位值，作图，添加拟合线      
+
+.pull-left[
+```r
+d0 %&gt;% 
+filter(Scientific_Name=="Mytilus edulis") |&gt; 
+  filter(Parameter == "Lead") |&gt;  
+  group_by(Fiscal_Year) |&gt; 
+  summarise(median = median(Value)) |&gt; 
+  ggplot(aes(Fiscal_Year, median)) +
+  geom_point() +
+  scale_y_log10() +
+  geom_smooth() +
+  labs(title="Pb")
+```
+]
+
+.pull-right[
+&lt;img src="pics/mussel_7.png" width="2755" /&gt;
+]
+
+
+---
+### 一并查看多种金属污染物的年际变化趋势
+
+选择重要的金属污染物
+
+```r
+metal &lt;- c("Arsenic", "Cadmium", "Chromium", "Copper", "Lead", "Mercury")
+d_trend &lt;- d0 |&gt; 
+  filter(Scientific_Name =="Mytilus edulis") |&gt; 
+  filter(Parameter %in% metal) |&gt; 
+  select(Fiscal_Year, Scientific_Name, Parameter, Value)
+head(d_trend)
+```
+
+```
+##   Fiscal_Year Scientific_Name Parameter  Value
+## 1        2009  Mytilus edulis   Arsenic 6.7700
+## 2        2009  Mytilus edulis   Cadmium 3.3600
+## 3        2009  Mytilus edulis  Chromium 0.7380
+## 4        2009  Mytilus edulis    Copper 6.9300
+## 5        2009  Mytilus edulis      Lead 0.3240
+## 6        2009  Mytilus edulis   Mercury 0.0375
+```
+
+---
+### 一并查看多种金属污染物的年际变化趋势
+```r
+d_trend |&gt; 
+  ggplot(aes(Fiscal_Year, Value))+
+  geom_point()+
+  geom_smooth(se = F)+
+  facet_wrap(~Parameter)+
+  scale_y_log10()
+```
+
+---
+### 一并查看多种金属污染物的年际变化趋势
+&lt;img src="pics/mussel_8.png" width="70%" /&gt;
+
+---
+### 多种金属污染物的年际变化趋势：细节修改
+```r
+d_trend |&gt; 
+  ggplot(aes(Fiscal_Year, Value))+
+  theme_classic()+
+geom_point(shape=".", position=position_jitter(width=0.1), alpha=0.5)+
+  stat_summary(geom="line", fun = "median", color="red2")+
+  stat_summary(geom="point", fun = "median", color="red2")+
+  facet_wrap(~Parameter, scales="free_y")+
+  geom_line(stat="smooth", method="lm", se = F, alpha=0.5, size = 1)+
+  scale_y_log10()+
+  theme(strip.background = element_blank(),
+        strip.text = element_text(hjust = 0, face ="bold"))+
+  annotation_logticks(sides = "l")+
+  labs(x = "Year", y = ~"Concentration in"~italic("M. edulis")~"("*mu*g~"g"^"-1"*")" )
+```
+
+---
+### 多种金属污染物的年际变化趋势：细节修改
+&lt;img src="pics/mussel_9.png" width="70%" /&gt;
+
+
+---
+### 研究问题3：Zn浓度高的牡蛎，是否Cu浓度也高？
+
+以牡蛎*Crassostrea virginica*为例  
+
+---
+### 方法1：用`pivot_wider()`来整理数据
+
+筛选出牡蛎 (*Crassostrea virginica*)的Cu, Zn数据
+
+
+```r
+d_CuZn &lt;- d0 %&gt;% 
+  filter(Scientific_Name=="Crassostrea virginica") |&gt; 
+  filter(Parameter %in% c("Copper","Zinc")) |&gt; 
+  select(Sample_ID, Fiscal_Year, Scientific_Name, Parameter, Value)
+ 
+head(d_CuZn) 
+```
+
+```
+##         Sample_ID Fiscal_Year       Scientific_Name Parameter Value
+## 1 BA2004SLE_072CV        2004 Crassostrea virginica    Copper   328
+## 2 BA2004SLE_072CV        2004 Crassostrea virginica      Zinc  2610
+## 3 BA2004SLE_073CV        2004 Crassostrea virginica    Copper   540
+## 4 BA2004SLE_073CV        2004 Crassostrea virginica      Zinc  3630
+## 5 BA2004SLE_074CV        2004 Crassostrea virginica    Copper   340
+## 6 BA2004SLE_074CV        2004 Crassostrea virginica      Zinc  2910
+```
+
+---
+### 把长表格转化为宽表格
+Cu、Zn数据原本在同一列，现分为两列  
+
+```r
+d_CuZn_wide &lt;- d_CuZn |&gt; 
+  pivot_wider(names_from = Parameter, 
+*             values_from = Value)
+head(d_CuZn_wide)
+```
+
+```
+## # A tibble: 6 × 5
+##   Sample_ID       Fiscal_Year Scientific_Name       Copper  Zinc
+##   &lt;chr&gt;                 &lt;int&gt; &lt;chr&gt;                  &lt;dbl&gt; &lt;dbl&gt;
+## 1 BA2004SLE_072CV        2004 Crassostrea virginica    328  2610
+## 2 BA2004SLE_073CV        2004 Crassostrea virginica    540  3630
+## 3 BA2004SLE_074CV        2004 Crassostrea virginica    340  2910
+## 4 BA2004SLE_075CV        2004 Crassostrea virginica    344  2310
+## 5 BA2004SLE_076CV        2004 Crassostrea virginica    392  2550
+## 6 MW1986ABLRCV           1986 Crassostrea virginica    170  1600
+```
+
+---
+### 作图  
+.pull-left[
+```{r
+d_CuZn_wide |&gt; 
+ ggplot(aes(Copper, Zinc))+
+  geom_point(size=0.2, alpha=0.5)+
+  scale_x_log10()+
+  scale_y_log10()
+```
+]
+
+.pull-right[
+
+&lt;img src="pics/mussel_10.png" width="2755" /&gt;
+
+
+]
+
+
+---
+### 分年份作图
+```r
+d_CuZn_wide |&gt; 
+ ggplot(aes(Copper, Zinc))+
+  geom_point(size=0.2, alpha=0.5)+
+
+  facet_wrap(~Fiscal_Year)+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_smooth(method="lm")
+```
+
+
+---
+### 分年份作图
+&lt;img src="pics/mussel_11.png" width="72%" /&gt;
+
+---
+### 方法2：用`inner_join()`，`left_join()`来合并数据   
+
+.pull-left[
+* 筛选出Copper的数据
+
+
+```r
+d_Cu &lt;- d_CuZn  %&gt;% 
+  filter(Parameter=="Copper") %&gt;% 
+  rename(Cu = Value) # 重命名
+dim(d_Cu) # 1655行
+```
+
+```
+## [1] 1655    5
+```
+]
+
+
+.pull-right[
+
+* 筛选出Zinc的数据
+
+```r
+d_Zn &lt;- d_CuZn %&gt;% 
+  filter(Parameter=="Zinc") %&gt;% 
+  rename(Zn=Value)
+dim(d_Zn) # 1655行
+```
+
+```
+## [1] 1655    5
+```
+]
+
+* 两种金属的数据都是1655条，很可能一一对应  
+* 这需要一一核对两组数据的`Sample_ID`才能确定，工作量很大  
+* `join`系列函数就派上用场了  
+
+
+---
+### 用`left_join()`合并两个表格  
+
+
+```r
+d_CuZn_wide2 &lt;- d_Cu |&gt;  
+  left_join(d_Zn, by = "Sample_ID") #当两组数据的Sample_ID相同时，则合并在同一行
+
+dim(d_CuZn_wide2) # 还是1655列，1个也没丢失，说明两组数据确实一一对应
+```
+
+```
+## [1] 1655    9
+```
+
+```r
+names(d_CuZn_wide2)
+```
+
+```
+## [1] "Sample_ID"         "Fiscal_Year.x"     "Scientific_Name.x"
+## [4] "Parameter.x"       "Cu"                "Fiscal_Year.y"    
+## [7] "Scientific_Name.y" "Parameter.y"       "Zn"
+```
+
+---
+
+### `join`系列函数  
+
+
+- `inner_join()`  
+return all rows from x where there are matching values in y, and all columns from x and y. If there are multiple matches between x and y, all combination of the matches are returned.    
+&lt;br&gt;
+- `left_join()`  
+return all rows from x, and all columns from x and y. Rows in x with no match in y will have NA values in the new columns. If there are multiple matches between x and y, all combinations of the matches are returned.  
+&lt;br&gt;
+- `right_join()`  
+return all rows from y, and all columns from x and y. Rows in y with no match in x will have NA values in the new columns. If there are multiple matches between x and y, all combinations of the matches are returned.  
+&lt;br&gt;
+- `full_join()`  
+return all rows and all columns from both x and y. Where there are not matching values, returns NA for the one missing.  
+&lt;br&gt;
+阅读： https://dplyr.tidyverse.org/reference/join.html
+
+---
+
+### 作散点图
+
+.pull-left[
+```r
+d_CuZn_wide2|&gt; 
+ggplot(aes(Cu, Zn))+
+  geom_point()+
+  scale_x_log10()+
+  scale_y_log10()+
+  geom_smooth(method="lm")
+
+```
+]
+
+
+.pull-right[
+
+&lt;img src="pics/mussel_12.png" width="2568" /&gt;
+]
+
+
+---
+## 要点小结
+
+函数 | 功能
+-----------|-----------------
+`fliter()`  | 根据其值筛选行
+`select()`  | 根据其名筛选列
+`arrange()` | 改变行的排序，从低到高排
+`arrange(desc())`| … 从高到低排
+`mutate()`  | 基于现有变量进行计算，增加新的变量（类比excel里的C1=A1*B1)
+`summarize()`  | 计算统计量（如均值、方差、中位数）
+`pivot_longer()` | 宽表格变长表格
+`pivot_wider()` | 长表格变宽表格
+`left_join()` |合并数据，保留左侧全部的，右侧没有对应值的则填充NA
+`inner_join()` |合并数据，保留共有的
+...      | ....
+
+
+---
+
+## 要点小结
+
+### pipe运算符：.red[`%&gt;%`]或.red[`|&gt;`]    
+
+- 翻译成管道，可读作"然后"
+- pipe将多个操作串联起来，上一操作的结果成为下一操作的对象  
+- 功能类似`ggplot`里的"`+`"号  
+
+
+---
+
+## 阅读：
+
+1. Overview of dplyr. https://dplyr.tidyverse.org/index.html  
+&lt;br&gt;  
+2. Introduction to dplyr. https://dplyr.tidyverse.org/articles/dplyr.html  
+&lt;br&gt;  
+3. Hadley Wickham, Mine Çetinkaya-Rundel, Garrett Grolemund. R for Data Science (2e): Chapter 4. Data transformation. https://r4ds.hadley.nz/data-transform.html  
+&lt;br&gt;  
+4. Hadley Wickham, Mine Çetinkaya-Rundel, Garrett Grolemund. R for Data Science (2e): Chapter 6. Data tidying. https://r4ds.hadley.nz/data-tidy.html
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
